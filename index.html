@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лила</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .player-panels {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 10px;
+            max-width: 600px;
+        }
+
+        .player-info {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            min-width: 120px;
+            min-height: 200px;
+            max-height: 320px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow: hidden;
+            font-size: 1.08em;
+        }
+
+        .player-info.active-player {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            transform: scale(1.02);
+        }
+
+        .player-info h3 {
+            margin: 0 0 6px 0;
+            color: #333;
+            font-size: 1em;
+        }
+
+        .player-info p {
+            min-height: 1.7em;
+            max-height: 2em;
+            font-size: 0.95em;
+            margin: 0 0 6px 0;
+        }
+
+        .player-info.hidden {
+            display: none;
+        }
+
+        .game-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px;
+            margin-top: 20px;
+            justify-content: center;
+            min-height: 500px;
+            height: 500px;
+        }
+
+        .game-layout.hidden {
+            display: none !important;
+        }
+
+        .game-board {
+            width: 500px;
+            height: 500px;
+            background: url('lila.jpeg') center center/640px 640px no-repeat;
+            position: relative;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            position: relative;
+            top: 100px; /* Сдвигаем панель с кнопкой вниз */
+        }
+
+        #rollDice {
+            background: transparent;
+            color: #fff;
+            border: 2.5px solid rgba(130,177,255,0.7);
+            border-radius: 50%;
+            padding: 15px 0;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: box-shadow 0.3s, border-color 0.3s, color 0.3s, background 0.3s;
+            box-shadow: 0 0 0 0 rgba(130,177,255,0.0);
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 0 0 8px #82b1ff, 0 1px 6px #000;
+            letter-spacing: 0.5px;
+        }
+
+        #rollDice:hover, #rollDice:focus {
+            border-color: #fff;
+            box-shadow: 0 0 24px 4px rgba(130,177,255,0.25), 0 0 0 2px #fff;
+            color: #fff;
+            background: rgba(130,177,255,0.08);
+        }
+
+        #rollDice:active {
+            box-shadow: 0 0 10px 2px rgba(130,177,255,0.18);
+            background: rgba(130,177,255,0.13);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 500px;
+            display: block;
+        }
+
+        .cell {
+            background: linear-gradient(145deg, #ffffff, #f5f5f5);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #2c3e50;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+            pointer-events: none;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .cell.snake {
+            background: linear-gradient(145deg, #ff6b6b, #ff8e8e);
+            color: white;
+        }
+
+        .cell.ladder {
+            background: linear-gradient(145deg, #4CAF50, #66BB6A);
+            color: white;
+        }
+
+        .cell.finish {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            color: white;
+            font-weight: bold;
+        }
+
+        .cell.start {
+            background: linear-gradient(145deg, #6A0DAD, #8A2BE2);
+            color: white;
+        }
+
+        .cell:nth-child(even) {
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+        }
+
+        .setup-panel {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+
+        .setup-panel h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .setup-panel select, .setup-panel input {
+            background: linear-gradient(145deg, #ffffff, #f5f5f5);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 12px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            color: #2c3e50;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .setup-panel select:hover, .setup-panel input:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .setup-panel select:focus, .setup-panel input:focus {
+            outline: none;
+            box-shadow: 0 4px 15px rgba(106, 13, 173, 0.2);
+            border-color: #6A0DAD;
+        }
+
+        .setup-panel button {
+            background: linear-gradient(145deg, #4CAF50, #66BB6A);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .setup-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .setup-panel button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.2);
+        }
+
+        .setup-panel label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* Стили для истории бросков */
+        .roll-history {
+            position: static;
+            background: rgba(255,255,255,0.97);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 0 6px 0 6px;
+            z-index: 2;
+            margin: 0;
+        }
+
+        .roll-history ul {
+            max-height: 90px;
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            font-size: 0.92em;
+        }
+
+        .roll-history li {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f7f7fa;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(44,62,80,0.06);
+            margin-bottom: 3px;
+            padding: 3px 6px;
+            font-size: 0.92em;
+            color: #333;
+            transition: background 0.2s;
+        }
+
+        .roll-history li:last-child {
+            margin-bottom: 0;
+        }
+
+        .roll-history .dice-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(145deg, #fff, #e0e0e0);
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(44,62,80,0.08);
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.95em;
+            color: #6A0DAD;
+            line-height: 16px;
+            margin-right: 2px;
+        }
+
+        /* Стили для полей ввода имен */
+        .player-name-input {
+            margin: 10px 0;
+        }
+
+        .player-name-input label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .player-name-input input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .player-name-input input:focus {
+            border-color: #6A0DAD;
+            outline: none;
+            box-shadow: 0 0 5px rgba(106, 13, 173, 0.3);
+        }
+
+        #player-name-inputs {
+            margin: 15px 0;
+        }
+
+        #player1-info { background: linear-gradient(145deg, #ffebee, #ffcdd2); }
+        #player2-info { background: linear-gradient(145deg, #e3f2fd, #bbdefb); }
+        #player3-info { background: linear-gradient(145deg, #e8f5e9, #c8e6c9); }
+        #player4-info { background: linear-gradient(145deg, #fff3e0, #ffe0b2); }
+
+        /* 3D Dice Cube */
+        .dice-container {
+            width: 120px;
+            height: 120px;
+            perspective: 600px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dice {
+            width: 70px;
+            height: 70px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(.23,1.12,.67,.99);
+        }
+        .face {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 0;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .face-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            border: 2.5px solid rgba(255,255,255,0.45);
+            box-shadow: 0 4px 16px rgba(80,80,160,0.18), 0 0 12px 2px rgba(130,177,255,0.18), inset 0 0 32px 8px rgba(20,20,40,0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7em;
+            color: #fff;
+            text-shadow: 0 1px 6px #000, 0 0 2px #fff;
+            background:
+                /* белые звёзды */
+                radial-gradient(circle at 20% 30%, #fff 1.2px, transparent 1.2px),
+                radial-gradient(circle at 80% 70%, #fff 1.5px, transparent 1.5px),
+                radial-gradient(circle at 60% 20%, #fff 0.9px, transparent 0.9px),
+                radial-gradient(circle at 40% 80%, #fff 1.1px, transparent 1.1px),
+                /* синие звёзды */
+                radial-gradient(circle at 30% 60%, #82b1ff 1.2px, transparent 1.2px),
+                radial-gradient(circle at 70% 40%, #82b1ff 1.1px, transparent 1.1px),
+                /* фиолетовые звёзды */
+                radial-gradient(circle at 55% 55%, #b388ff 1.3px, transparent 1.3px),
+                radial-gradient(circle at 15% 80%, #b388ff 1px, transparent 1px),
+                /* туманность */
+                radial-gradient(ellipse at 60% 80%, rgba(130,177,255,0.10) 0%, transparent 70%),
+                radial-gradient(ellipse at 30% 20%, rgba(179,136,255,0.07) 0%, transparent 80%),
+                /* glow по краям */
+                radial-gradient(circle at 0% 0%, rgba(130,177,255,0.10) 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, rgba(179,136,255,0.07) 0%, transparent 60%),
+                /* основной космический градиент с прозрачностью */
+                linear-gradient(135deg, rgba(26,35,126,0.62) 0%, rgba(81,45,168,0.58) 60%, rgba(13,19,61,0.52) 100%);
+        }
+        .face1 { transform: rotateY(0deg) translateZ(35px); }
+        .face2 { transform: rotateY(180deg) translateZ(35px); }
+        .face3 { transform: rotateY(90deg) translateZ(35px); }
+        .face4 { transform: rotateY(-90deg) translateZ(35px); }
+        .face5 { transform: rotateX(90deg) translateZ(35px); }
+        .face6 { transform: rotateX(-90deg) translateZ(35px); }
+    </style>
+</head>
+<body>
+    <h1>Лила</h1>
+    
+    <div id="setup">
+        <div class="setup-panel">
+            <label for="playerCount">Выберите количество игроков:</label>
+            <select id="playerCount">
+                <option value="1">1 игрок</option>
+                <option value="2">2 игрока</option>
+                <option value="3">3 игрока</option>
+                <option value="4">4 игрока</option>
+            </select>
+            
+            <div id="player-name-inputs"></div>
+            
+            <button id="startGame">Начать игру</button>
+        </div>
+    </div>
+    
+    <div class="game-layout hidden"> <!-- Всегда hidden по умолчанию -->
+        <div class="player-panels">
+            <div id="player1-info" class="player-info hidden">
+                <h3>Игрок 1</h3>
+                <p id="player1-status">Нужно выбросить 6.</p>
+                <div class="roll-history">
+                    <ul id="player1-history"></ul>
+                </div>
+            </div>
+            <div id="player2-info" class="player-info hidden">
+                <h3>Игрок 2</h3>
+                <p id="player2-status">Нужно выбросить 6.</p>
+                <div class="roll-history">
+                    <ul id="player2-history"></ul>
+                </div>
+            </div>
+            <div id="player3-info" class="player-info hidden">
+                <h3>Игрок 3</h3>
+                <p id="player3-status">Нужно выбросить 6.</p>
+                <div class="roll-history">
+                    <ul id="player3-history"></ul>
+                </div>
+            </div>
+            <div id="player4-info" class="player-info hidden">
+                <h3>Игрок 4</h3>
+                <p id="player4-status">Нужно выбросить 6.</p>
+                <div class="roll-history">
+                    <ul id="player4-history"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="game-board">
+            <canvas id="gameCanvas" width="500" height="500"></canvas>
+        </div>
+        <div class="button-panel">
+            <div class="dice-container">
+                <div class="dice" id="dice-cube">
+                    <div class="face face1">
+                        <div class="face-inner">1</div>
+                    </div>
+                    <div class="face face2">
+                        <div class="face-inner">2</div>
+                    </div>
+                    <div class="face face3">
+                        <div class="face-inner">3</div>
+                    </div>
+                    <div class="face face4">
+                        <div class="face-inner">4</div>
+                    </div>
+                    <div class="face face5">
+                        <div class="face-inner">5</div>
+                    </div>
+                    <div class="face face6">
+                        <div class="face-inner">6</div>
+                    </div>
+                </div>
+            </div>
+            <button id="rollDice">Бросить<br>кубик</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const rollButton = document.getElementById('rollDice');
+        const player1Info = document.getElementById('player1-info');
+        const player2Info = document.getElementById('player2-info');
+        const player3Info = document.getElementById('player3-info');
+        const player4Info = document.getElementById('player4-info');
+        const player1Status = document.getElementById('player1-status');
+        const player2Status = document.getElementById('player2-status');
+        const player3Status = document.getElementById('player3-status');
+        const player4Status = document.getElementById('player4-status');
+        const playerCountSelect = document.getElementById('playerCount');
+        const startGameBtn = document.getElementById('startGame');
+        const setupDiv = document.getElementById('setup');
+        const gameLayoutDiv = document.querySelector('.game-layout');
+        const playerNameInputsContainer = document.getElementById('player-name-inputs');
+
+        // Параметры сетки
+        const rows = 8;
+        const cols = 9;
+        const totalCells = rows * cols; // 72
+        const cellWidth = canvas.width / cols;
+        const cellHeight = canvas.height / rows;
+
+        // Состояния игроков
+        const players = [
+            {
+                name: "Игрок 1",
+                color: "rgba(255, 82, 82, 0.9)", // Более насыщенный красный
+                borderColor: "#ff5252", // Более насыщенный красный
+                position: -1, // Индекс -1 означает "вне поля"
+                state: 'NOT_STARTED', // 'NOT_STARTED', 'AWAITING_SECOND_ROLL', 'STARTED', 'FINISHED'
+                statusElement: player1Status,
+                nameElement: player1Info.querySelector('h3')
+            },
+            {
+                name: "Игрок 2",
+                color: "rgba(33, 150, 243, 0.9)", // Более насыщенный синий
+                borderColor: "#2196f3", // Более насыщенный синий
+                position: -1, // Индекс -1 означает "вне поля"
+                state: 'NOT_STARTED', // 'NOT_STARTED', 'AWAITING_SECOND_ROLL', 'STARTED', 'FINISHED'
+                statusElement: player2Status,
+                nameElement: player2Info.querySelector('h3')
+            },
+            {
+                name: "Игрок 3",
+                color: "rgba(76, 175, 80, 0.9)", // Более насыщенный зеленый
+                borderColor: "#4caf50", // Более насыщенный зеленый
+                position: -1,
+                state: 'NOT_STARTED',
+                statusElement: player3Status,
+                nameElement: player3Info.querySelector('h3')
+            },
+            {
+                name: "Игрок 4",
+                color: "rgba(255, 152, 0, 0.9)", // Более насыщенный оранжевый
+                borderColor: "#ff9800", // Более насыщенный оранжевый
+                position: -1,
+                state: 'NOT_STARTED',
+                statusElement: player4Status,
+                nameElement: player4Info.querySelector('h3')
+            }
+        ];
+        
+        // Текущий игрок (0 до numberOfPlayers-1)
+        let currentPlayerIndex = 0;
+        let numberOfPlayers = 0; // Будет установлено при старте
+        let gameStarted = false; // Добавляем флаг начала игры
+        let gameOver = false; // Добавляем флаг окончания игры
+        
+        const finalCellIndex = 67; // Индекс 67 (КЛЕТКА 68)
+
+        // Позиции змей (индекс начала -> индекс конца)
+        const snakes = {
+            15: 3,  // 16 -> 4
+            11: 7,  // 12 -> 8
+            23: 6,  // 24 -> 7
+            28: 5,  // 29 -> 6
+            43: 8,  // 44 -> 9
+            54: 2,  // 55 -> 3
+            60: 12, // 61 -> 13
+            62: 1,  // 63 -> 2
+            71: 50  // 72 -> 51
+        };
+
+        // Позиции стрел (индекс начала -> индекс конца)
+        const ladders = {
+             9: 22, // 10 -> 23
+            16: 68, // 17 -> 69
+            19: 31, // 20 -> 32
+            21: 59, // 22 -> 60
+            26: 40, // 27 -> 41
+            27: 49, // 28 -> 50
+            36: 65, // 37 -> 66
+            44: 66, // 45 -> 67
+            45: 61, // 46 -> 62
+            53: 67  // 54 -> 68 (FINISH)
+        };
+
+        // Позиции чакр (индекс -> {имя, цвет})
+        const chakras = {
+             4: { name: "Корневая", color: "#FF0000" },     // 5
+            13: { name: "Сакральная", color: "#FF7F00" },    // 14
+            22: { name: "Солнечное сплетение", color: "#FFFF00" },// 23
+            31: { name: "Сердечная", color: "#00FF00" },    // 32
+            40: { name: "Горловая", color: "#0000FF" },    // 41
+            49: { name: "Третий глаз", color: "#4B0082" },  // 50
+            58: { name: "Корона", color: "#9400D3" }       // 59
+            // Клетки 68 и 72 убраны из чакр
+        };
+
+        // Функция для получения координат клетки по ее индексу
+        function getCellCoordinates(index) {
+            const row = Math.floor(index / cols);
+            let col;
+            if (row % 2 === 0) {
+                // Четные ряды (0, 2, 4, 6) идут слева направо
+                col = index % cols;
+            } else {
+                // Нечетные ряды (1, 3, 5, 7) идут справа налево
+                col = cols - 1 - (index % cols);
+            }
+            // Y-координата инвертирована, так как (0,0) в левом верхнем углу
+            const x = col * cellWidth;
+            const y = (rows - 1 - row) * cellHeight;
+            return { x, y };
+        }
+
+        // Загрузка фонового изображения для поля
+        const boardBgImg = new Image();
+        boardBgImg.src = 'lila.jpeg';
+        let boardBgLoaded = false;
+        boardBgImg.onload = function() { boardBgLoaded = true; drawBoard(); };
+
+        // Функция для отрисовки игрового поля
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Отрисовка только фишек игроков
+            for (let i = 0; i < numberOfPlayers; i++) {
+                const player = players[i];
+                if (player.position >= 0) {
+                    const { x, y } = getCellCoordinates(player.position);
+                    // Смещение для 4 фишек на одной клетке (по углам)
+                    const markerSize = cellWidth / 8;
+                    let offsetX = 0;
+                    let offsetY = 0;
+                    const offsetAmount = cellWidth / 4;
+                    if (i === 0) { // Top-left
+                        offsetX = -offsetAmount;
+                        offsetY = -offsetAmount;
+                    } else if (i === 1) { // Top-right
+                        offsetX = offsetAmount;
+                        offsetY = -offsetAmount;
+                    } else if (i === 2) { // Bottom-left
+                        offsetX = -offsetAmount;
+                        offsetY = offsetAmount;
+                    } else if (i === 3) { // Bottom-right
+                        offsetX = offsetAmount;
+                        offsetY = offsetAmount;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(x + cellWidth / 2 + offsetX, y + cellHeight / 2 + offsetY, markerSize, 0, Math.PI * 2);
+                    ctx.fillStyle = player.color;
+                    ctx.fill();
+                    ctx.strokeStyle = player.borderColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    // Внутренний круг для лучшей видимости
+                    ctx.beginPath();
+                    ctx.arc(x + cellWidth / 2 + offsetX, y + cellHeight / 2 + offsetY, markerSize * 0.7, 0, Math.PI * 2);
+                    ctx.fillStyle = player.color;
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Функция для генерации криптографически безопасного случайного числа
+        function getRandomInt(min, max) {
+            const array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            return min + (array[0] % (max - min + 1));
+        }
+
+        // Функция броска кубика
+        function rollDice() {
+            if (!gameStarted || gameOver) return;
+            
+            const currentPlayer = players[currentPlayerIndex];
+            if (currentPlayer.state === 'FINISHED') return;
+
+            // Анимация броска кубика
+            const diceButton = document.getElementById('rollDice');
+            diceButton.style.transform = 'scale(0.9)';
+            diceButton.style.boxShadow = '0 2px 10px rgba(106, 13, 173, 0.2)';
+            
+            setTimeout(() => {
+                diceButton.style.transform = 'scale(1)';
+                diceButton.style.boxShadow = '0 4px 15px rgba(106, 13, 173, 0.3)';
+            }, 200);
+
+            const diceResult = getRandomInt(1, 6);
+            animateDice(diceResult);
+            return diceResult;
+        }
+
+        function animateMove(player, newPosition, roll) {
+            const startPosition = player.position;
+            const steps = 20; // Количество шагов анимации
+            const stepDuration = 50; // Длительность каждого шага в мс
+            
+            let currentStep = 0;
+            const interval = setInterval(() => {
+                currentStep++;
+                const progress = currentStep / steps;
+                
+                // Плавное перемещение между позициями
+                const currentPosition = Math.floor(startPosition + (newPosition - startPosition) * progress);
+                
+                // Обновляем позицию игрока
+                player.position = currentPosition;
+                updatePlayerInfoUI();
+                
+                if (currentStep >= steps) {
+                    clearInterval(interval);
+                    checkPosition(player, newPosition);
+                }
+            }, stepDuration);
+        }
+
+        function checkPosition(player, newPosition) {
+            if (newPosition > 100) {
+                player.position = 100 - (newPosition - 100);
+                updatePlayerInfoUI();
+            }
+
+            const cell = cells[player.position - 1];
+            if (cell.snake) {
+                // Анимация спуска по змее
+                setTimeout(() => {
+                    player.position = cell.snake;
+                    updatePlayerInfoUI();
+                }, 500);
+            } else if (cell.ladder) {
+                // Анимация подъема по лестнице
+                setTimeout(() => {
+                    player.position = cell.ladder;
+                    updatePlayerInfoUI();
+                }, 500);
+            }
+
+            if (player.position === 100) {
+                player.state = 'FINISHED';
+                gameOver = true;
+                updatePlayerInfoUI();
+            } else {
+                nextPlayer();
+            }
+        }
+
+        // Функция для перехода к следующему игроку
+        function switchToNextPlayer() {
+             // Пропускаем игроков, которые уже закончили
+             let nextPlayerIndex = (currentPlayerIndex + 1) % numberOfPlayers;
+             while (players[nextPlayerIndex].state === 'FINISHED' && nextPlayerIndex !== currentPlayerIndex) {
+                 nextPlayerIndex = (nextPlayerIndex + 1) % numberOfPlayers;
+             }
+             // Проверяем, не остались ли все игроки в состоянии FINISHED
+             const allFinished = players.slice(0, numberOfPlayers).every(p => p.state === 'FINISHED');
+             if (!allFinished) {
+                currentPlayerIndex = nextPlayerIndex;
+             }
+            updatePlayerInfoUI();
+        }
+
+        // Функция обновления статуса игрока в UI
+        function updatePlayerStatus(playerIndex, status) {
+            players[playerIndex].statusElement.textContent = status;
+        }
+
+        // Функция обновления UI для отображения текущего игрока
+        function updatePlayerInfoUI() {
+            const allPlayerPanels = [player1Info, player2Info, player3Info, player4Info];
+            
+            // Сначала сбрасываем классы активности и видимость
+            allPlayerPanels.forEach((panel, index) => {
+                panel.classList.remove('active-player');
+                // Скрываем панели игроков сверх выбранного количества
+                if (index >= numberOfPlayers) {
+                    panel.classList.add('hidden');
+                } else {
+                    panel.classList.remove('hidden');
+                }
+            });
+            
+            // Применяем активный класс к текущему игроку (если он существует)
+            if (currentPlayerIndex < numberOfPlayers) {
+                allPlayerPanels[currentPlayerIndex].classList.add('active-player');
+            }
+            
+            // Обновляем статусы только для активных игроков
+            for (let i = 0; i < numberOfPlayers; i++) {
+                const player = players[i];
+                const positionText = player.position >= 0 ? `Клетка ${player.position + 1}` : "Не на поле";
+                
+                let statusText = "";
+                if (player.state === 'NOT_STARTED') {
+                    statusText = `Нужно выбросить 6.`;
+                } else if (player.state === 'AWAITING_SECOND_ROLL') {
+                    statusText = `Выбросили 6! Второй бросок.`;
+                } else if (player.state === 'STARTED') {
+                    statusText = `${positionText}`;
+                } else if (player.state === 'FINISHED') {
+                    statusText = `Достиг Высшего Сознания!`;
+                }
+                
+                // Обновляем имя игрока в заголовке панели
+                if(player.nameElement) {
+                    player.nameElement.textContent = player.name;
+                }
+                
+                updatePlayerStatus(i, statusText);
+            }
+            // Меняем цвет кнопки броска кубика под цвет текущего игрока
+            const rollButton = document.getElementById('rollDice');
+            if (numberOfPlayers > 0 && players[currentPlayerIndex]) {
+                const borderColor = players[currentPlayerIndex].borderColor;
+                rollButton.style.borderColor = borderColor;
+                rollButton.style.boxShadow = `0 0 24px 4px ${borderColor}55, 0 0 0 2px #fff`;
+                rollButton.style.color = '#fff';
+            } else {
+                rollButton.style.borderColor = 'rgba(130,177,255,0.7)';
+                rollButton.style.boxShadow = '0 0 0 0 rgba(130,177,255,0.0)';
+                rollButton.style.color = '#fff';
+            }
+        }
+
+        function initializeGame() {
+             // Сброс состояний всех игроков (даже если выбрано меньше 4)
+             players.forEach(player => {
+                 player.position = -1;
+                 player.state = 'NOT_STARTED';
+             });
+             currentPlayerIndex = 0;
+            rollButton.disabled = false; // Включаем кнопку броска
+             updatePlayerInfoUI();
+             drawBoard();
+        }
+
+        // Функция для создания полей ввода имен игроков
+        function createNameInputs() {
+            const container = document.getElementById('player-name-inputs');
+            container.innerHTML = '';
+            
+            const playerCount = parseInt(playerCountSelect.value);
+            const colors = ['Красный', 'Синий', 'Зеленый', 'Оранжевый'];
+            
+            for (let i = 0; i < playerCount; i++) {
+                const div = document.createElement('div');
+                div.className = 'player-name-input';
+                div.innerHTML = `
+                    <label for="player${i+1}Name">Имя игрока ${i+1} (${colors[i]}):</label>
+                    <input type="text" id="player${i+1}Name" placeholder="Введите имя игрока">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // Обработчик изменения количества игроков
+        playerCountSelect.addEventListener('change', createNameInputs);
+
+        // Обработчик клика по кнопке "Начать игру"
+        startGameBtn.addEventListener('click', startGame);
+
+        // Создаем поля для ввода имен при загрузке страницы
+        createNameInputs();
+
+        // Функция старта игры
+        function startGame() {
+            numberOfPlayers = parseInt(playerCountSelect.value);
+            if (numberOfPlayers < 1 || numberOfPlayers > 4) {
+                alert("Пожалуйста, выберите от 1 до 4 игроков.");
+                return;
+            }
+
+            // Считываем имена игроков
+            for (let i = 0; i < numberOfPlayers; i++) {
+                const nameInput = document.getElementById(`player${i+1}Name`);
+                players[i].name = nameInput.value.trim() || `Игрок ${i+1}`;
+                players[i].nameElement.textContent = players[i].name;
+            }
+
+            // Скрываем настройки, показываем игру
+            setupDiv.classList.add('hidden');
+            gameLayoutDiv.classList.remove('hidden');
+            
+            // Отключаем выбор и кнопку старта
+            playerCountSelect.disabled = true;
+            startGameBtn.disabled = true;
+
+            // Показываем только нужное количество панелей игроков
+            const allPlayerPanels = [player1Info, player2Info, player3Info, player4Info];
+            allPlayerPanels.forEach((panel, index) => {
+                if (index < numberOfPlayers) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            });
+
+            gameStarted = true;
+            gameOver = false;
+            initializeGame();
+        }
+
+        // Добавляем историю бросков для каждого игрока
+        players.forEach((player, index) => {
+            player.rollHistory = [];
+            player.historyElement = document.getElementById(`player${index + 1}-history`);
+            player.historyContainer = player.historyElement.parentElement;
+            player.showHistoryBtn = player.historyContainer.previousElementSibling;
+            
+            // Обработчик для кнопки показа истории (только toggle для своей истории)
+            player.showHistoryBtn.addEventListener('click', () => {
+                player.historyContainer.classList.toggle('show');
+            });
+        });
+
+        // Функция для добавления броска в историю
+        function addToRollHistory(player, roll, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Извлекаем информацию о конечной клетке из сообщения
+            let finalCell = "не на поле";
+            if (player.state === 'STARTED' || player.state === 'FINISHED') {
+                finalCell = player.position + 1;
+            }
+            
+            // Создаем компактную запись
+            const compactMessage = `Выпало ${roll} → Клетка ${finalCell}`;
+            
+            player.rollHistory.unshift({
+                roll: roll,
+                message: compactMessage,
+                timestamp: timestamp
+            });
+            
+            // Обновляем отображение истории
+            updateRollHistory(player);
+        }
+
+        // Функция для обновления отображения истории
+        function updateRollHistory(player) {
+            player.historyElement.innerHTML = '';
+            player.rollHistory.forEach(entry => {
+                const li = document.createElement('li');
+                // Добавляем иконку кубика с числом
+                const diceIcon = document.createElement('span');
+                diceIcon.className = 'dice-icon';
+                diceIcon.textContent = entry.roll;
+                li.appendChild(diceIcon);
+                // Текст сообщения
+                const text = document.createElement('span');
+                text.textContent = entry.message.replace(/^Выпало \d+ → /, ''); // убираем повтор числа
+                li.appendChild(text);
+                player.historyElement.appendChild(li);
+            });
+        }
+
+        // Обработчик клика по кнопке "Бросить кубик"
+        rollButton.addEventListener('click', () => {
+            if (numberOfPlayers === 0) return;
+            
+            const player = players[currentPlayerIndex];
+            if (player.state === 'FINISHED') {
+                switchToNextPlayer();
+                return;
+            }
+
+            const diceResult = rollDice();
+            if (!diceResult) return;
+            
+            let message = `${player.name}: выпало ${diceResult}. `;
+
+            if (player.state === 'NOT_STARTED') {
+                // Логика входа в игру - Первый бросок
+                if (diceResult === 6) {
+                    player.state = 'AWAITING_SECOND_ROLL';
+                    message += `Вы вошли в игру! Бросьте кубик еще раз, чтобы определить стартовую клетку.`;
+                    // Позиция пока не меняется (player.position = -1)
+                } else {
+                    message += `Нужно выбросить 6, чтобы войти в игру.`;
+                    // Переход хода к следующему игроку
+                    switchToNextPlayer();
+                }
+            } else if (player.state === 'AWAITING_SECOND_ROLL'){
+                // Логика входа в игру - Второй бросок
+                const secondRoll = diceResult; // Используем текущий бросок как второй
+                player.position = (6 + secondRoll) - 1; // Определяем стартовую позицию (индекс)
+                player.state = 'STARTED';
+                message += `Второй бросок: ${secondRoll}. Вы начинаете на клетке ${player.position + 1}.`;
+
+                // Сразу проверяем стрелы/змеи/чакры на стартовой клетке
+                // Запоминаем позицию ПОСЛЕ входа, но ДО змей/стрел на старте
+                const positionAfterEntry = player.position;
+
+                if (positionAfterEntry in ladders) {
+                    const targetCell = ladders[positionAfterEntry];
+                    message += ` Сразу попадаете на стрелу! Поднимаетесь на клетку ${targetCell + 1}.`;
+                    player.position = targetCell;
+                } else if (positionAfterEntry in snakes) {
+                    const targetCell = snakes[positionAfterEntry];
+                    message += ` Сразу попадаете на змею! Спускаетесь на клетку ${targetCell + 1}.`;
+                    player.position = targetCell;
+                }
+
+                // Проверка на чакру на КОНЕЧНОЙ стартовой клетке
+                if (player.position in chakras) {
+                    message += ` Стартуете на чакре ${chakras[player.position].name}!`;
+                }
+                // Проверка на победу на стартовой клетке (маловероятно, но возможно со стрелой 54->68)
+                if (player.position === finalCellIndex) {
+                    message += ` Поздравляем! Вы сразу достигли Высшего Сознания (клетка 68)!`;
+                    player.state = 'FINISHED';
+                }
+                
+                // Переход хода к следующему игроку
+                switchToNextPlayer();
+                
+            } else if (player.state === 'STARTED') {
+                // Обычный ход игры
+                const initialPosition = player.position; // Запоминаем позицию до броска
+                let nextPosition = initialPosition + diceResult;
+
+                if (nextPosition >= totalCells) { // Проверяем, не выходит ли ход за пределы клетки 72
+                    // Если ход вывел бы за пределы поля, остаемся на месте
+                    message += ` Ход (${diceResult}) превышает поле (72). Вы остаетесь на клетке ${initialPosition + 1}.`;
+                    // player.position не меняется
+                } else {
+                    // Допустимый ход в пределах поля
+                    player.position = nextPosition;
+                    message += ` Переход на клетку ${player.position + 1}.`;
+
+                    // Запоминаем позицию ПОСЛЕ броска, но ДО змей/стрел
+                    const positionAfterRoll = player.position;
+
+                    // Проверка на стрелу (на клетке, куда попали ПОСЛЕ броска)
+                    if (positionAfterRoll in ladders) {
+                        const targetCell = ladders[positionAfterRoll];
+                        message += ` Попали на стрелу! Поднимаетесь на клетку ${targetCell + 1}.`;
+                        player.position = targetCell; // Обновляем позицию на конец стрелы
+                    }
+                    // Проверка на змею (на клетке, куда попали ПОСЛЕ броска)
+                    else if (positionAfterRoll in snakes) {
+                        const targetCell = snakes[positionAfterRoll];
+                        message += ` Попали на змею! Спускаетесь на клетку ${targetCell + 1}.`;
+                        player.position = targetCell; // Обновляем позицию на хвост змеи
+                    }
+                }
+
+                // Проверки на чакру и победу выполняются на КОНЕЧНОЙ клетке после всех перемещений
+                if (player.position >= 0) { // Убедимся, что игрок все еще на поле
+                    // Проверка на чакру
+                    if (player.position in chakras) {
+                        message += ` Достигли чакры ${chakras[player.position].name}!`;
+                    }
+
+                    // Проверка на победу (только если точно попали на 68)
+                    if (player.position === finalCellIndex) {
+                        message += ` Поздравляем! Вы достигли Высшего Сознания (клетка 68)!`;
+                        player.state = 'FINISHED'; // Обновляем состояние
+                    }
+                }
+                
+                // Проверяем, выпала ли 6 (бонусный ход)
+                if (diceResult === 6) {
+                    message += " Вы выбросили 6! Бросайте еще раз.";
+                    // НЕ переходим к следующему игроку
+                } else {
+                    // Переход хода к следующему игроку
+                    switchToNextPlayer();
+                }
+            }
+
+            // Добавляем бросок в историю
+            addToRollHistory(player, diceResult, message);
+
+            // Обновляем UI и отрисовываем доску
+            updatePlayerInfoUI();
+            drawBoard();
+        });
+
+        // Начальная отрисовка (убрана, т.к. игра начнется по кнопке)
+        // updatePlayerInfoUI();
+        // drawBoard();
+
+        // 3D Dice Animation
+        const diceCube = document.getElementById('dice-cube');
+        let lastDiceValue = 1;
+        function animateDice(roll) {
+            // Определяем поворот для каждой грани
+            const rotations = {
+                1: 'rotateX(0deg) rotateY(0deg)',
+                2: 'rotateX(0deg) rotateY(180deg)',
+                3: 'rotateX(0deg) rotateY(-90deg)',
+                4: 'rotateX(0deg) rotateY(90deg)',
+                5: 'rotateX(-90deg) rotateY(0deg)',
+                6: 'rotateX(90deg) rotateY(0deg)',
+            };
+            // Для эффекта вращения добавим случайные обороты
+            const extraX = 360 * (Math.floor(Math.random()*2)+1);
+            const extraY = 360 * (Math.floor(Math.random()*2)+1);
+            diceCube.style.transform = `rotateX(${extraX}deg) rotateY(${extraY}deg) ${rotations[roll]}`;
+            lastDiceValue = roll;
+        }
+        // Вызовите animateDice(roll) после броска кубика в вашей функции rollDice
+        // Например, после генерации числа:
+        // animateDice(rollResult);
+    </script>
+</body>
+</html>
